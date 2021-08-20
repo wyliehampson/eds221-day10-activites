@@ -1,0 +1,130 @@
+---
+title: "EDS 221 Day 10 Activities"
+author: "Wylie Hampson"
+date: "8/20/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(ggbeeswarm)
+library(lubridate)
+```
+
+Read in the data
+
+```{r}
+# Ice cover data
+ice_cover_duration <- read_csv(here::here("data", "ntl33_v7.csv"), na = "-999")
+
+# Meteorlogical data
+meteorlogical_data <- read_csv(here::here("data", "ntl20_v6.csv"))
+```
+
+Compare ice duration for different lakes
+
+```{r}
+ice_plot_1 <- ggplot(data = ice_cover_duration, aes(x = lakeid, y = ice_duration)) +
+  geom_violin() +
+  geom_beeswarm() +
+  labs(x = "Lake ID",
+       y = "Days Frozen",
+       title = "Days Frozen For Lake Mendota, Monona, and Wingra",
+       subtitle = "Total number of days frozen taken from 1851-2019")
+
+ice_plot_1
+```
+
+Find the mean ice cover duration in Madison Lake Area by year (i.e., you’ll only be grouping by the year variable here). Understanding check: what are you finding the mean of here? Why are there multiple observations for each year?)
+
+```{r}
+mean_ice_year <- ice_cover_duration %>% 
+  group_by(year4) %>% 
+  summarize(mean_ice_days = mean(ice_duration, na.rm = TRUE))
+```
+
+Create an exploratory visualization of mean ice cover duration by year for the Madison Lake Area. Add a sentence or two below this exploratory graph describing the overall trend(s) you observe.
+
+```{r}
+mean_ice_plot <- ggplot(data = mean_ice_year, aes(x = year4, y = mean_ice_days)) +
+  geom_point() +
+  geom_smooth() +
+  labs(x = "Year",
+       y = "Average Days Frozen",
+       title = "Average Days Frozen Per Year 1851-2019",
+       subtitle = "Average number of days frozen between Lake Mendota, Monona, and Wingra")
+
+mean_ice_plot
+```
+The above graphs shows the average number of days that the three observed lakes were frozen over the years 1851-2019. The general trend is that as the years have gone by, the average number of days that the lake are frozen has decreased.
+
+
+Find the mean air temperature (using the daily average air temperature - adjusted) in Madison Lake Area by year using only observations from winter months (December, January, February)
+
+```{r}
+mean_air_temp <- meteorlogical_data %>% 
+  filter(month(sampledate) == c(12, 1, 2)) %>% 
+  group_by(year4) %>% 
+  summarize(mean_air_temp_c = mean(ave_air_temp_adjusted))
+```
+
+Create an exploratory visualization of mean winter temperatures for the Madison Lake Area. Add a sentence or two below this exploratory graph describing the overall trend(s) you observe.
+
+```{r}
+air_plot_1 <- ggplot(data = mean_air_temp, aes(x = year4, y = mean_air_temp_c)) +
+  geom_point() +
+  geom_smooth() +
+  labs(x = "Year",
+       y = "Average Air Temp (c)",
+       title = "Average Air Temp",
+       subtitle = "Temperatures taken from Dec, Jan, and Feb during years 1851-2019")
+
+air_plot_1
+```
+The above graph shows the mean daily air temperature during the months of December, January, and February during the years 1851-2019 in the Madison Lake Area. The general trend shows that as the years increase, the daily average air temperature has increased.
+
+Join the mean winter air temperatures to the mean ice cover duration data you found above
+
+```{r}
+mean_air_ice <- full_join(mean_air_temp, mean_ice_year, by = "year4")
+
+```
+
+Create an exploratory scatterplot of mean winter temperatures versus mean ice duration. Add a sentence or two below this exploratory graph describing the overall trend(s) you observe.
+
+```{r}
+mean_plot <- ggplot(data = mean_air_ice, aes(x = mean_ice_days, y = mean_air_temp_c)) +
+  geom_point() +
+  labs(x = "Average Frozen Days",
+       y = "Mean Air Temp (c)",
+       title = "Average Frozen Days vs. Mean Air Temp",)
+
+mean_plot
+```
+The above graph compares the Average number of days per year that the lakes in the Madison Lake Area were frozen vs. the mean daily air temperature during Dec, Jan, and Feb of those years. There appears to be a general trend showing that as temp decreases, the number of days that the lakes are frozen increases.
+
+
+Explore thaw dates since 1970. Create a subset of the ice cover duration data since 1970 (ok to include 1970), then convert the ice_off column to a Date. Use lubridate::yday() to pull the numeric day of the year from that Date. Create an exploratory plot of the ice off day (numeric day-of-the-year) from 1970 - present. Add a sentence or two below this exploratory graph describing the overall trend(s) you observe.
+
+```{r}
+ice_thaw_subset <- ice_cover_duration %>% 
+  filter(year4 >= 1970) %>% 
+  mutate(ice_off = ymd(ice_off)) %>% 
+  mutate(day_of_year_ice_off = yday(ice_off))
+
+ice_off_plot <- ggplot(data = ice_thaw_subset, aes(x = year4, y = day_of_year_ice_off)) +
+  geom_point() +
+  labs(x = "Year",
+       y = "Day Of Year",
+       title = "Day Of Year of Ice Melt")
+
+ice_off_plot
+```
+The above grpaph shows which day of the year the ice melted on each lake in the Madison Lake Area from 1970-2019. There seems to be a slight trend towards the day that the lakes thawing happening earlier in the year each year since 1970.
+
+
+
+
+
